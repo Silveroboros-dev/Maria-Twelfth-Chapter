@@ -53,7 +53,16 @@
     return state;
   }
   function finished(state, quest) { return stageList(quest).every((s,i) => state.completed[i]===s.id); }
-  const api={VERSION,STORAGE_KEY,normalize,fresh,hydrate,stageList,current,matches,complete,submit,advance,finished};
+  function lastClue(state, quest) {
+    const safe = hydrate(state, quest);
+    if (!["search", "puzzle", "success", "finale"].includes(safe.phase)) return null;
+    if (finished(safe, quest)) return { heading: "The FINAL envelope", text: quest.finale.text.at(-1) };
+    const count = safe.completed.length;
+    if (!count) return { heading: "Envelope I", text: quest.opening.first_search };
+    const target = stageList(quest)[count];
+    return { heading: target.id === "gate" ? "The Dawn Gate" : "Envelope " + target.number, text: quest.stages[count-1].success_text };
+  }
+  const api={VERSION,STORAGE_KEY,normalize,fresh,hydrate,stageList,current,matches,complete,submit,advance,finished,lastClue};
   root.QuestCore=api;
   if(typeof module!=="undefined" && module.exports) module.exports=api;
 })(typeof window!=="undefined" ? window : globalThis);

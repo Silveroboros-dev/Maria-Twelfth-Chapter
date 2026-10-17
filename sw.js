@@ -1,5 +1,5 @@
-const CACHE="maria-chapter-twelve-v3";
-const ASSETS=["./","index.html","styles.css?v=3","app.js?v=3","core.js?v=3","quest.js?v=3","rehearsal.js?v=3","music.js?v=3","assets/archive.svg"];
+const CACHE="maria-chapter-twelve-v4";
+const ASSETS=["./","index.html","styles.css?v=4","app.js?v=4","core.js?v=4","quest.js?v=4","rehearsal.js?v=4","music.js?v=4","keeper.js?v=4","assets/archive.svg"];
 self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));});
 self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith("maria-chapter-twelve-")&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener("fetch",event=>{

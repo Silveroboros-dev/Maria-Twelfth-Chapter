@@ -21,6 +21,10 @@
     const n=state.completed.length;
     return `<div class="chapter-progress"><span>${Math.min(n,5)} OF 5 SEALS</span><div class="progress-track" aria-label="${n} of 6 puzzles solved">${all.map((s,i)=>`<i class="${state.completed.includes(s.id)?"done":""}" title="${e(s.title)}"></i>`).join("")}</div><span>${n===6?"GATE OPEN":n===5?"THE DAWN GATE":"TOWARDS THE SUN"}</span></div>`;
   }
+  function previousClue(){
+    const clue=C.lastClue(state,q);
+    return clue?`<details class="last-clue"><summary>Show last clue</summary><div><span class="eyebrow">${e(clue.heading)}</span><p>${e(clue.text)}</p>${rehearsal?'<p class="small-note">This is the physical hiding clue. Your rehearsal envelope is already on screen.</p>':""}</div></details>`:"";
+  }
   function hints(id,items){
     const count=state.hints[id]||0;
     return `<section class="hints" aria-label="Hints">${count?items.slice(0,count).map((h,i)=>`<p><span>HINT ${i+1}</span> ${e(h)}</p>`).join(""):""}${count<items.length?button(count?"Another hint":"A whisper from the Keeper", "hint", "text-button"):"<span class=\"hint-end\">You can ask your host for a little more help.</span>"}</section>`;
@@ -54,7 +58,7 @@
     document.body.dataset.phase=state.phase;
     document.body.style.setProperty("--dawn",String(Math.min(state.completed.length/6,1)));
     const views={cover,opening,search,puzzle,success,finale};
-    app.innerHTML=(rehearsal?R.banner():"")+(state.phase!=="cover"?progress():"")+(views[state.phase]||cover)()+(state.phase!=="cover"?sealTray():"")+(!storageOK?`<p class="storage-notice" role="status">This browser could not save progress. Keep this tab open during the quest.</p>`:"");
+    app.innerHTML=(rehearsal?R.banner():"")+(state.phase!=="cover"?progress():"")+previousClue()+(views[state.phase]||cover)()+(state.phase!=="cover"?sealTray():"")+(!storageOK?`<p class="storage-notice" role="status">This browser could not save progress. Keep this tab open during the quest.</p>`:"");
     if(focus){app.focus({preventScroll:true});window.scrollTo({top:0,behavior:"auto"});}
     updateMusic();
   }
@@ -90,23 +94,47 @@
     }
   });
   const dialog=document.getElementById("keeper-dialog"), kc=document.getElementById("keeper-content");
+  let keeperRequest=0;
+  function lockKeeper(){keeperUnlocked=false;keeperRequest++;kc.replaceChildren();}
+  function closeKeeper(){lockKeeper();if(dialog.open)dialog.close();else dialog.removeAttribute("open");}
   function showKeeper(){
-    if(!keeperUnlocked){kc.innerHTML=`<button class="dialog-close quiet" data-keeper="close" aria-label="Close host controls">Close ×</button><span class="eyebrow">FOR THE ADULT HOST</span><h2 id="keeper-title">The Keeper’s desk</h2><p>This desk contains the answer key and rescue controls. Players, leave this part to your host.</p>${button("I’m hosting this adventure","unused").replace('data-action="unused"','data-keeper="unlock"')}`;}
+    if(!keeperUnlocked){kc.innerHTML=`<button class="dialog-close quiet" data-keeper="close" aria-label="Close host controls">Close ×</button><span class="eyebrow">FOR THE ADULT HOST</span><h2 id="keeper-title">The Keeper’s desk</h2><p>Enter the parent PIN to open the answer key and host controls.</p><form id="keeper-pin-form" novalidate><label for="keeper-pin">Parent PIN</label><input id="keeper-pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" autocorrect="off" spellcheck="false" aria-describedby="keeper-pin-error" placeholder="Four digits"><p id="keeper-pin-error" class="feedback" role="status"></p><button class="primary" type="submit">Unlock the Keeper’s desk</button></form>`;}
     else{
       const s=state.phase==="puzzle"?C.current(state,q):null;
       kc.innerHTML=`<button class="dialog-close quiet" data-keeper="close">Close ×</button><span class="eyebrow">HOST CONTROLS / THIS DEVICE</span><h2 id="keeper-title">Keep the story moving.</h2><p>${rehearsal?"This rehearsal saves separately. Resetting it leaves the party game’s progress alone.":"Progress saves on this device. Hints and help carry no penalty."}</p><p><a class="secondary" href="${rehearsal?"./":"?rehearsal=1"}">${rehearsal?"Return to party game":"Rehearse with all clues on screen"} ↗</a></p><details><summary>Hiding places and answer key</summary><ol>${q.stages.map(t=>`<li><strong>${e(t.number)} / ${e(t.title)}: ${e(t.answer)}</strong><p>${e({court:"Behind the rightmost R of THRILLER beside the pumpkin.",mirror:"Under the MOON-marked chair; include a small mirror.",case:"Behind the STAR-marked sofa cushion.",map:"Under the closed SUN-marked book on a table.",embers:"Behind the reachable brown-and-white plush fox."}[t.id])}</p></li>`).join("")}<li><strong>VI / Dawn Gate: ${e(q.gate.answer)}</strong><p>COMPASS, LANTERN, BRIDGE, MAP, SUN. Keep the gate card and FINAL with you.</p></li></ol></details>${s?`<div class="rescue"><p>Stuck at ${e(s.title)}? First offer the printed hints. A rescue awards this chapter’s seal and reveals its next location.</p><button class="secondary" data-keeper="rescue-confirm">Help with this chapter</button></div>`:""}<div class="restart-zone"><p>${rehearsal?"Start a fresh rehearsal whenever you want.":"Testing finished? Reset before Maria begins."}</p><button class="text-button" data-keeper="reset-confirm">Start again from the cover</button></div>`;
     }
     if(!dialog.open){if(typeof dialog.showModal==="function")dialog.showModal();else dialog.setAttribute("open","");}
+    if(!keeperUnlocked)document.getElementById("keeper-pin")?.focus({preventScroll:true});
   }
-  document.getElementById("keeper-toggle").addEventListener("click",showKeeper);
+  document.getElementById("keeper-toggle").addEventListener("click",()=>{lockKeeper();showKeeper();});
+  dialog.addEventListener("cancel",lockKeeper);
+  dialog.addEventListener("close",()=>{if(!dialog.open){lockKeeper();document.getElementById("keeper-toggle").focus({preventScroll:true});}});
+  document.addEventListener("visibilitychange",()=>{if(document.hidden&&dialog.open)closeKeeper();});
+  kc.addEventListener("submit",async event=>{
+    if(event.target.id!=="keeper-pin-form")return;
+    event.preventDefault();
+    const input=document.getElementById("keeper-pin"), feedback=document.getElementById("keeper-pin-error"), submit=event.target.querySelector('button[type="submit"]');
+    const pin=input.value, request=++keeperRequest;
+    input.value="";submit.disabled=true;
+    try{
+      const valid=await window.QuestKeeper.checkPin(pin);
+      if(request!==keeperRequest||!dialog.open)return;
+      if(valid){keeperUnlocked=true;showKeeper();kc.querySelector('.dialog-close')?.focus({preventScroll:true});}
+      else{feedback.textContent="That PIN did not open the desk. Ask your parent or host.";submit.disabled=false;input.focus({preventScroll:true});}
+    }catch{
+      if(request!==keeperRequest||!dialog.open)return;
+      feedback.textContent="Open the quest's HTTPS link in Safari, then try again.";submit.disabled=false;input.focus({preventScroll:true});
+    }
+  });
   kc.addEventListener("click",event=>{
     const a=event.target.closest("[data-keeper]")?.dataset.keeper;
-    if(a==="close")dialog.close();
-    if(a==="unlock"){keeperUnlocked=true;showKeeper();}
-    if(a==="reset-confirm")kc.innerHTML=`<h2 id="keeper-title">Start a fresh ${rehearsal?"rehearsal":"adventure"}?</h2><p>${rehearsal?"This clears only the rehearsal. Party progress is unchanged.":"This clears the answers and seals saved on this device."}</p><div class="dialog-actions"><button class="secondary" data-keeper="unlock">Keep our progress</button><button class="primary" data-keeper="reset">Reset the quest</button></div>`;
-    if(a==="reset"){state=C.fresh();if(rehearsal)props=R.fresh();music.reset();error="";keeperUnlocked=false;save();dialog.close();render();}
-    if(a==="rescue-confirm")kc.innerHTML=`<h2 id="keeper-title">Help this chapter along?</h2><p>This completes only the current chapter. The team will still solve every later puzzle.</p><div class="dialog-actions"><button class="secondary" data-keeper="unlock">Back to hints</button><button class="primary" data-keeper="rescue">Award this chapter</button></div>`;
-    if(a==="rescue" && keeperUnlocked){const next=C.complete(state,q,"",true);if(next){state=next;error="";save();dialog.close();render();}}
+    if(a==="close"){closeKeeper();return;}
+    if(!keeperUnlocked||!dialog.open)return;
+    if(a==="desk")showKeeper();
+    if(a==="reset-confirm")kc.innerHTML=`<button class="dialog-close quiet" data-keeper="close" aria-label="Close host controls">Close ×</button><h2 id="keeper-title">Start a fresh ${rehearsal?"rehearsal":"adventure"}?</h2><p>${rehearsal?"This clears only the rehearsal. Party progress is unchanged.":"This clears the answers and seals saved on this device."}</p><div class="dialog-actions"><button class="secondary" data-keeper="desk">Keep our progress</button><button class="primary" data-keeper="reset">Reset the quest</button></div>`;
+    if(a==="reset"){state=C.fresh();if(rehearsal)props=R.fresh();music.reset();error="";save();closeKeeper();render();}
+    if(a==="rescue-confirm")kc.innerHTML=`<button class="dialog-close quiet" data-keeper="close" aria-label="Close host controls">Close ×</button><h2 id="keeper-title">Help this chapter along?</h2><p>This completes only the current chapter. The team will still solve every later puzzle.</p><div class="dialog-actions"><button class="secondary" data-keeper="desk">Back to hints</button><button class="primary" data-keeper="rescue">Award this chapter</button></div>`;
+    if(a==="rescue"){const next=C.complete(state,q,"",true);if(next){state=next;error="";save();closeKeeper();render();}}
   });
   const panel=document.getElementById("soundtrack"), mt=document.getElementById("music-toggle");
   let musicScroll=0;
