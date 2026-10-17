@@ -44,10 +44,10 @@
   function success(){
     const s=C.current(state,q), gate=s.id==="gate", seal=q.seals.find(t=>t.symbol===s.seal);
     const next=all[state.completed.length];
-    return `<section class="reading success"><span class="eyebrow">${gate?"THE DAWN GATE IS OPEN":"CHAPTER "+e(s.number)+" / UNLOCKED"}</span><h1>${gate?"You brought<br><em>the light back.</em>":"Another page<br><em>turns towards dawn.</em>"}</h1>${seal?`<div class="earned-seal"><span>✦</span><div><strong>${e(seal.symbol)} SEAL</strong><small>LETTER ${e(seal.letter)} / DIGIT ${e(seal.digit)}</small></div></div>`:""}<p class="lead">${e(gate?"The five digits hold. Now read the letters on your seals, from left to right. The Keeper is waiting on the other side.":s.success_text)}</p>${rehearsal&&!gate?'<p class="rehearsal-note">In the party game, follow that hiding-place clue. For this rehearsal, the next envelope is ready on screen.</p>':""}<div class="reading-bottom">${button(gate?"Turn the twelfth page <span>→</span>":rehearsal?(next.id==="gate"?"Open the Dawn Gate card <span>→</span>":`Open envelope ${e(next.number)} <span>→</span>`):"We’re ready for the next chapter <span>→</span>","advance")}</div></section>`;
+    return `<section class="reading success"><span class="eyebrow">${gate?"THE DAWN GATE IS OPEN":"CHAPTER "+e(s.number)+" / UNLOCKED"}</span><h1>${gate?"You brought<br><em>the light back.</em>":"Another page<br><em>turns towards dawn.</em>"}</h1>${state.firstTry.includes(s.id)?'<p class="first-key">✦ FIRST KEY. PERFECT FIT. UNSTOPPABLE.</p>':""}${seal?`<div class="earned-seal"><span>✦</span><div><strong>${e(seal.symbol)} SEAL</strong><small>LETTER ${e(seal.letter)} / DIGIT ${e(seal.digit)}</small></div></div>`:""}<p class="lead">${e(gate?"The five digits hold. Now read the letters on your seals, from left to right. The Keeper is waiting on the other side.":s.success_text)}</p>${rehearsal&&!gate?'<p class="rehearsal-note">In the party game, follow that hiding-place clue. For this rehearsal, the next envelope is ready on screen.</p>':""}<div class="reading-bottom">${button(gate?"Turn the twelfth page <span>→</span>":rehearsal?(next.id==="gate"?"Open the Dawn Gate card <span>→</span>":`Open envelope ${e(next.number)} <span>→</span>`):"We’re ready for the next chapter <span>→</span>","advance")}</div></section>`;
   }
   function finale(){
-    return `<section class="reading finale"><span class="eyebrow">HAPPY TWELFTH BIRTHDAY, MARIA</span><div class="sunburst" aria-hidden="true">✺</div><h1>Chapter Twelve<br><em>is yours.</em></h1><div class="shine" aria-label="The seals spell SHINE">S H I N E</div><div class="story-text">${paragraphs(q.finale.text)}</div><div class="finale-song"><span class="eyebrow">YOUR NEXT CHAPTER HAS A SOUNDTRACK</span><h2>Unwritten</h2><p>Natasha Bedingfield</p><a class="primary" href="https://www.youtube.com/watch?v=b7k0a5hYnSI" target="_blank" rel="noopener noreferrer">Open Unwritten on YouTube <span>↗</span></a><p class="small-note">Or ask your host to cue the song on the party speaker.</p></div></section>`;
+    return `<section class="reading finale"><span class="eyebrow">HAPPY TWELFTH BIRTHDAY, MARIA</span><div class="sunburst" aria-hidden="true">✺</div><h1>Chapter Twelve<br><em>is yours.</em></h1><div class="shine" aria-label="The seals spell SHINE">S H I N E</div><div class="story-text">${paragraphs(q.finale.text)}</div><div class="finale-song"><span class="eyebrow">YOUR NEXT CHAPTER HAS A SOUNDTRACK</span><h2>Unwritten</h2><p>Natasha Bedingfield</p>${button("Play finale music <span>♫</span>","finale-music")}<p class="small-note" id="finale-music-status"></p></div></section>`;
   }
   function render(focus=true){
     state=C.hydrate(state,q);
@@ -63,9 +63,10 @@
     if(event.target.id!=="answer-form")return;
     event.preventDefault();
     state.input=document.getElementById("answer").value;
-    const next=C.complete(state,q,state.input);
-    if(next){state=next;error="";save();render();}
-    else{error="That key hasn’t turned yet. Compare your clues and try again.";render(false);document.getElementById("answer").focus();}
+    const result=C.submit(state,q,state.input);
+    state=result.state;save();
+    if(result.correct){if(result.firstTry)music.victory();error="";render();}
+    else{error=result.empty?"Enter your team's answer first.":"That key hasn’t turned yet. Compare your clues and try again.";render(false);document.getElementById("answer").focus();}
   });
   app.addEventListener("click",event=>{
     const control=event.target.closest("[data-rehearsal]");
@@ -82,6 +83,7 @@
     }
     const action=event.target.closest("[data-action]")?.dataset.action;
     if(action==="advance"){state=C.advance(state,q);error="";save();render();}
+    if(action==="finale-music"){music.start();if(!music.snapshot().files.finale)toggleMusic(true);}
     if(action==="hint"){
       const id=state.phase==="search"?"search":C.current(state,q).id;
       state.hints[id]=Math.min(3,(state.hints[id]||0)+1);save();render(false);
@@ -102,40 +104,43 @@
     if(a==="close")dialog.close();
     if(a==="unlock"){keeperUnlocked=true;showKeeper();}
     if(a==="reset-confirm")kc.innerHTML=`<h2 id="keeper-title">Start a fresh ${rehearsal?"rehearsal":"adventure"}?</h2><p>${rehearsal?"This clears only the rehearsal. Party progress is unchanged.":"This clears the answers and seals saved on this device."}</p><div class="dialog-actions"><button class="secondary" data-keeper="unlock">Keep our progress</button><button class="primary" data-keeper="reset">Reset the quest</button></div>`;
-    if(a==="reset"){state=C.fresh();if(rehearsal)props=R.fresh();error="";keeperUnlocked=false;save();dialog.close();render();}
+    if(a==="reset"){state=C.fresh();if(rehearsal)props=R.fresh();music.reset();error="";keeperUnlocked=false;save();dialog.close();render();}
     if(a==="rescue-confirm")kc.innerHTML=`<h2 id="keeper-title">Help this chapter along?</h2><p>This completes only the current chapter. The team will still solve every later puzzle.</p><div class="dialog-actions"><button class="secondary" data-keeper="unlock">Back to hints</button><button class="primary" data-keeper="rescue">Award this chapter</button></div>`;
     if(a==="rescue" && keeperUnlocked){const next=C.complete(state,q,"",true);if(next){state=next;error="";save();dialog.close();render();}}
   });
-  const panel=document.getElementById("soundtrack"), mt=document.getElementById("music-toggle"), player=document.getElementById("music-player");
-  let currentTrack="", musicScroll=0;
-  function updateMusic(){
-    const final=C.finished(state,q);
-    const track=final?"finale":"main";
-    if(track!==currentTrack){
-      currentTrack=track;player.innerHTML="";
-      document.getElementById("music-title").textContent=final?"Unwritten":"Towards the Sun";
-      document.getElementById("music-artist").textContent=final?"Natasha Bedingfield":"Rihanna";
-      document.getElementById("music-link").href="https://www.youtube.com/watch?v="+(final?"b7k0a5hYnSI":"G3jq77_P-cA");
-      document.getElementById("music-link").textContent=final?"Open Unwritten on YouTube ↗":"Open YouTube ↗";
-      const musicNote=document.getElementById("music-note");
-      if(musicNote)musicNote.textContent=final?"Open Unwritten on YouTube, or ask your host to cue it on the party speaker.":"Play here opens the song inside the quest. Tap ▶ in the video to start. YouTube may show ads. You can also cue it on your party speaker.";
-      const credit=document.getElementById("music-credit-link");
-      if(credit){credit.href=document.getElementById("music-link").href;credit.textContent=final?"Unwritten / Natasha Bedingfield ↗":"Towards the Sun / Rihanna ↗";}
-      // Finale uses an outbound link. The selected song is never a reward-gated video embed.
-      document.getElementById("load-music").hidden=final;
-    }
+  const panel=document.getElementById("soundtrack"), mt=document.getElementById("music-toggle");
+  let musicScroll=0;
+  function drawMusic(s){
+    const kind=s.active||s.context, track=window.QuestMusic.TRACKS[kind];
+    document.getElementById("music-title").textContent=track.title;
+    document.getElementById("music-artist").textContent=track.artist;
+    document.getElementById("music-status").textContent=s.message||(s.playing?`${track.title} is playing on this device.`:"Tap Start music when you're ready.");
+    document.getElementById("start-music").textContent=s.playing?"Playing ♫":"Start music";
+    document.getElementById("start-music").disabled=s.playing;
+    document.getElementById("pause-music").disabled=!s.intent;
+    document.getElementById("preview-victory").disabled=!s.files.victory||s.context==="finale";
+    for(const key of ["main","victory","finale"])document.getElementById("file-"+key).textContent=s.files[key]||"No file chosen";
+    const credit=document.getElementById("music-credit-link");
+    credit.href=kind==="victory"?"https://music.apple.com/ch/album/unstoppable/1055074478?i=1055074639":"https://www.youtube.com/watch?v="+(kind==="finale"?"b7k0a5hYnSI":"G3jq77_P-cA");
+    credit.textContent=`${track.title} / ${track.artist} ↗`;
+    const finaleStatus=document.getElementById("finale-music-status");
+    if(finaleStatus)finaleStatus.textContent=s.playing&&s.active==="finale"?"Your final chapter is playing.":"Tap Play finale music to start or resume. Your host can choose the file in Music.";
   }
+  const music=window.QuestMusic.create(document.getElementById("party-audio"),{onChange:drawMusic});
+  function updateMusic(){music.setContext(state.phase==="finale"&&C.finished(state,q));drawMusic(music.snapshot());}
   function toggleMusic(open){
     if(open)musicScroll=window.scrollY;
     panel.hidden=!open;mt.setAttribute("aria-expanded",String(open));
     if(open)panel.scrollIntoView({behavior:"auto",block:"start"});
-    else{player.innerHTML="";window.scrollTo({top:musicScroll,behavior:"auto"});mt.focus({preventScroll:true});}
+    else{window.scrollTo({top:musicScroll,behavior:"auto"});mt.focus({preventScroll:true});}
   }
   mt.addEventListener("click",()=>toggleMusic(panel.hidden));
   document.getElementById("music-close").addEventListener("click",()=>toggleMusic(false));
-  document.getElementById("load-music").addEventListener("click",()=>{
-    player.innerHTML='<iframe title="Towards the Sun by Rihanna - official YouTube player" width="480" height="270" src="https://www.youtube-nocookie.com/embed/G3jq77_P-cA?playsinline=1&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe><p class="small-note">Tap Play in the video. If it cannot play here, use the YouTube link below.</p>';
-  });
+  document.getElementById("start-music").addEventListener("click",()=>music.start());
+  document.getElementById("pause-music").addEventListener("click",()=>music.pause());
+  document.querySelectorAll("[data-song]").forEach(input=>input.addEventListener("change",()=>music.select(input.dataset.song,input.files?.[0])));
+  document.getElementById("cue-start").addEventListener("change",event=>music.setCueStart(event.target.value));
+  document.getElementById("preview-victory").addEventListener("click",()=>music.victory(true));
   render(false);
   if("serviceWorker" in navigator && location.protocol!=="file:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();
