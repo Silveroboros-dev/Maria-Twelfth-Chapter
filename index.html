@@ -9,14 +9,14 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Maria / The Twelfth Chapter</title>
   <link rel="icon" href="assets/archive.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=7">
-  <script src="quest.js?v=7" defer></script>
-  <script src="core.js?v=7" defer></script>
-  <script src="rehearsal.js?v=7" defer></script>
-  <script src="music.js?v=7" defer></script>
-  <script src="effects.js?v=7" defer></script>
-  <script src="keeper.js?v=7" defer></script>
-  <script src="app.js?v=7" defer></script>
+  <link rel="stylesheet" href="styles.css?v=8">
+  <script src="quest.js?v=8" defer></script>
+  <script src="core.js?v=8" defer></script>
+  <script src="rehearsal.js?v=8" defer></script>
+  <script src="music.js?v=8" defer></script>
+  <script src="effects.js?v=8" defer></script>
+  <script src="keeper.js?v=8" defer></script>
+  <script src="app.js?v=8" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -34,10 +34,10 @@
   <aside id="soundtrack" class="music-panel" hidden aria-label="Party soundtrack">
     <div class="music-heading"><div><span class="eyebrow">THE PARTY SOUNDTRACK</span><h2 id="music-title">Towards the Sun</h2><p id="music-artist">Rihanna</p></div><button class="quiet" id="music-close" type="button" aria-label="Close music">Close ×</button></div>
     <section class="effects-controls" aria-labelledby="effects-title"><h3 id="effects-title">The castle comes alive.</h3><p>Iron bolts, creaking hinges and stone echoes when a chapter opens. A short locked-door knock when a key does not fit. These original sounds are included and work without song files.</p><audio id="quest-effects" preload="auto"></audio><div class="music-actions"><button class="secondary" id="preview-door" type="button">Preview iron door</button><button class="secondary" id="preview-gate" type="button">Preview Dawn Gate</button><button class="secondary" id="preview-failure" type="button">Preview locked door</button></div><p id="effects-status" class="small-note" role="status">Tap a preview to hear the castle.</p></section>
-    <p class="music-note">Towards the Sun accompanies the quest. A first answer can bring an Unstoppable celebration while the main video is playing. Natasha Bedingfield’s Unwritten opens your final chapter at 2:01.</p>
+    <p class="music-note">Towards the Sun accompanies the quest. A correct answer in under one minute, or every third consecutive correct answer, starts a 12-second Unstoppable celebration. Natasha Bedingfield’s Unwritten opens your final chapter at 2:01.</p>
     <p id="music-status" role="status">Play a YouTube video inside the quest. No music files are needed.</p>
     <div class="music-actions"><button class="primary" id="start-music" type="button">Play Towards the Sun video</button><button class="secondary" id="pause-music" type="button" disabled>Pause video</button></div>
-    <details class="music-setup"><summary>Unstoppable celebration cue</summary><div class="cue-setup"><label for="cue-start">Start the Unstoppable cue at (seconds)</label><input id="cue-start" type="number" min="0" max="3600" step="1" value="0"><button class="secondary" id="preview-victory" type="button">Preview 12-second cue</button><p class="small-note">Choose your favourite moment. Hints are welcome. Empty answers and host rescues never trigger this video.</p></div></details>
+    <details class="music-setup"><summary>Unstoppable celebration cue</summary><div class="cue-setup"><label for="cue-start">Start the Unstoppable cue at (seconds)</label><input id="cue-start" type="number" min="0" max="3600" step="1" value="0"><button class="secondary" id="preview-victory" type="button">Preview 12-second cue</button><p class="small-note">Choose your favourite moment. The minute starts when each puzzle opens and continues through reloads. Wrong answers reset the streak. Hints are welcome; blank submissions and host rescues never trigger a celebration.</p></div></details>
     <details class="music-credits"><summary>Song credit / listen online</summary><p><a id="music-credit-link" href="https://www.youtube.com/watch?v=G3jq77_P-cA" target="_blank" rel="noopener noreferrer">Towards the Sun / Rihanna ↗</a></p><p class="small-note">Internet required. YouTube may show ads or ask you to tap Play. Its normal player controls stay visible.</p></details>
   </aside>
   <footer class="site-footer"><span>ONE TEAM. FIVE SEALS. YOUR NEXT CHAPTER.</span><button class="quiet" id="keeper-toggle" type="button">For the Keeper</button></footer>

@@ -48,7 +48,7 @@
   function success(){
     const s=C.current(state,q), gate=s.id==="gate", seal=q.seals.find(t=>t.symbol===s.seal);
     const next=all[state.completed.length];
-    return `<section class="reading success"><span class="eyebrow">${gate?"THE DAWN GATE IS OPEN":"CHAPTER "+e(s.number)+" / UNLOCKED"}</span><h1>${gate?"You brought<br><em>the light back.</em>":"Another page<br><em>turns towards dawn.</em>"}</h1>${state.firstTry.includes(s.id)?'<p class="first-key">✦ FIRST KEY. PERFECT FIT. UNSTOPPABLE.</p>':""}${seal?`<div class="earned-seal"><span>✦</span><div><strong>${e(seal.symbol)} SEAL</strong><small>LETTER ${e(seal.letter)} / DIGIT ${e(seal.digit)}</small></div></div>`:""}<p class="lead">${e(gate?"The five digits hold. Now read the letters on your seals, from left to right. The Keeper is waiting on the other side.":s.success_text)}</p>${rehearsal&&!gate?'<p class="rehearsal-note">In the party game, follow that hiding-place clue. For this rehearsal, the next envelope is ready on screen.</p>':""}<div class="reading-bottom">${button(gate?"Turn the twelfth page <span>→</span>":rehearsal?(next.id==="gate"?"Open the Dawn Gate card <span>→</span>":`Open envelope ${e(next.number)} <span>→</span>`):"We’re ready for the next chapter <span>→</span>","advance")}</div></section>`;
+    return `<section class="reading success"><span class="eyebrow">${gate?"THE DAWN GATE IS OPEN":"CHAPTER "+e(s.number)+" / UNLOCKED"}</span><h1>${gate?"You brought<br><em>the light back.</em>":"Another page<br><em>turns towards dawn.</em>"}</h1>${state.celebrations[s.id]?`<p class="first-key">✦ ${e({quick:"UNDER ONE MINUTE. UNSTOPPABLE.",streak:"THREE CORRECT IN A ROW. UNSTOPPABLE.",both:"UNDER ONE MINUTE. THREE IN A ROW. UNSTOPPABLE."}[state.celebrations[s.id]])}</p>`:""}${seal?`<div class="earned-seal"><span>✦</span><div><strong>${e(seal.symbol)} SEAL</strong><small>LETTER ${e(seal.letter)} / DIGIT ${e(seal.digit)}</small></div></div>`:""}<p class="lead">${e(gate?"The five digits hold. Now read the letters on your seals, from left to right. The Keeper is waiting on the other side.":s.success_text)}</p>${rehearsal&&!gate?'<p class="rehearsal-note">In the party game, follow that hiding-place clue. For this rehearsal, the next envelope is ready on screen.</p>':""}<div class="reading-bottom">${button(gate?"Turn the twelfth page <span>→</span>":rehearsal?(next.id==="gate"?"Open the Dawn Gate card <span>→</span>":`Open envelope ${e(next.number)} <span>→</span>`):"We’re ready for the next chapter <span>→</span>","advance")}</div></section>`;
   }
   function finale(){
     return `<section class="reading finale"><span class="eyebrow">HAPPY TWELFTH BIRTHDAY, MARIA</span><div class="sunburst" aria-hidden="true">✺</div><h1>Chapter Twelve<br><em>is yours.</em></h1><div class="shine" aria-label="The seals spell SHINE">S H I N E</div><div class="finale-song"><span class="eyebrow">LET YOUR CELEBRATION BEGIN / FROM 2:01</span><h2>Unwritten</h2><p>Natasha Bedingfield</p>${button("Play celebration video · 2:01 <span>▶</span>","finale-music")}<p class="small-note" id="finale-music-status"></p></div><div class="story-text">${paragraphs(q.finale.text)}</div></section>`;
@@ -69,7 +69,7 @@
     state.input=document.getElementById("answer").value;
     const result=C.submit(state,q,state.input);
     state=result.state;save();
-    if(result.correct){effects.play(C.current(state,q).id==="gate"?"gate":"door");if(result.firstTry)music.victory();error="";render();}
+    if(result.correct){effects.play(C.current(state,q).id==="gate"?"gate":"door");if(result.celebration)music.victory();error="";render();}
     else{if(!result.empty)effects.play("failure");error=result.empty?"Enter your team's answer first.":"That key hasn’t turned yet. Compare your clues and try again.";render(false);document.getElementById("answer").focus();}
   });
   app.addEventListener("click",event=>{
@@ -195,6 +195,6 @@
   document.getElementById("preview-failure").addEventListener("click",()=>effects.play("failure"));
   drawEffects(effects.snapshot());
   if("IntersectionObserver" in window)new IntersectionObserver(entries=>{if(entries.at(-1).intersectionRatio<0.5&&music.snapshot().visible&&music.snapshot().intent)music.pause();},{threshold:[0,0.5,1]}).observe(document.getElementById("music-player"));
-  render(false);
+  state=C.beginPuzzle(state);save();render(false);
   if("serviceWorker" in navigator && location.protocol!=="file:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();

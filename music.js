@@ -289,8 +289,9 @@
       notify();
     }
 
-    function victory(preview = false) {
-      if (context === "finale" || active === "victory" || (!preview && !(active === "main" && intent))) return false;
+    function victory() {
+      // A qualifying answer is itself the play request, even before the main theme starts.
+      if (context === "finale" || active === "victory") return false;
       if (typeof options.onOpen === "function") options.onOpen();
       returnTo = { time: active === "main" ? currentTime() : track("main").start, intent: active === "main" && intent };
       switchSource("victory", cueStart, true);
