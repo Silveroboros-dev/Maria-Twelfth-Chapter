@@ -4,7 +4,7 @@
 
   const TRACKS = Object.freeze({
     main: Object.freeze({ title: "Towards the Sun", artist: "Rihanna", videoId: "G3jq77_P-cA", start: 0 }),
-    victory: Object.freeze({ title: "Unstoppable", artist: "Sia", videoId: "lIaGs-bWxEk", start: 0 }),
+    victory: Object.freeze({ title: "Unstoppable", artist: "Sia", videoId: "lIaGs-bWxEk", start: 46 }),
     finale: Object.freeze({ title: "Unwritten", artist: "Natasha Bedingfield", videoId: "b7k0a5hYnSI", start: 121 })
   });
   let apiPromise;
@@ -37,7 +37,7 @@
     const clearTimer = options.clearInterval || root.clearInterval.bind(root);
     const origin = options.origin || root.location?.origin || "";
     let context = "main", active = "", visible = false, playing = false, intent = false;
-    let message = "Tap Play video to open YouTube inside the quest.", cueStart = 0;
+    let message = "Tap Play video to open YouTube inside the quest.", cueStart = TRACKS.victory.start;
     let iframe = null, player = null, playerReady = false, timer = null, returnTo = null;
     let revision = 0, playerEpoch = 0, sourceStart = 0, sourceStarted = false;
 

@@ -1,5 +1,5 @@
-const CACHE="maria-chapter-twelve-v8";
-const ASSETS=["./","index.html","styles.css?v=8","app.js?v=8","core.js?v=8","quest.js?v=8","rehearsal.js?v=8","music.js?v=8","effects.js?v=8","keeper.js?v=8","assets/archive.svg","assets/castle-door.mp3?v=8","assets/dawn-gate.mp3?v=8","assets/locked-door.mp3?v=8"];
+const CACHE="maria-chapter-twelve-v9";
+const ASSETS=["./","index.html","styles.css?v=9","app.js?v=9","core.js?v=9","quest.js?v=9","rehearsal.js?v=9","music.js?v=9","effects.js?v=9","keeper.js?v=9","assets/archive.svg","assets/castle-door.mp3?v=9","assets/dawn-gate.mp3?v=9","assets/locked-door.mp3?v=9"];
 async function audioRange(response, range) {
   if (!range || response.status !== 200) return response;
   const match=/^bytes=(\d*)-(\d*)$/.exec(range);

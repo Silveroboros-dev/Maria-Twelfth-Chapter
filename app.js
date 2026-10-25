@@ -152,7 +152,7 @@
     document.getElementById("video-title").textContent=`${track.title} / ${track.artist}`;
     document.getElementById("video-status").textContent=s.message||(s.playing?"Your video is playing.":"Tap ▶ in the video if playback waits.");
     const credit=document.getElementById("music-credit-link");
-    credit.href="https://www.youtube.com/watch?v="+track.videoId+(kind==="finale"?"&t=121s":"");
+    credit.href="https://www.youtube.com/watch?v="+track.videoId+(kind==="finale"?"&t=121s":kind==="victory"?`&t=${Math.floor(s.cueStart)}s`:"");
     credit.textContent=`${track.title} / ${track.artist} ↗`;
     document.getElementById("video-link").href=credit.href;
     const finaleStatus=document.getElementById("finale-music-status");
@@ -171,7 +171,7 @@
   document.getElementById("start-music").addEventListener("click",()=>music.start(music.snapshot().context==="finale"));
   document.getElementById("pause-music").addEventListener("click",()=>music.pause());
   document.getElementById("close-video").addEventListener("click",()=>music.close());
-  document.getElementById("cue-start").addEventListener("change",event=>music.setCueStart(event.target.value));
+  document.getElementById("cue-start").addEventListener("input",event=>music.setCueStart(event.target.value));
   document.getElementById("preview-victory").addEventListener("click",()=>music.victory(true));
   const effectsPreference="maria-twelfth-chapter-effects-v1", effectsToggle=document.getElementById("effects-toggle");
   let effectsEnabled=true;
