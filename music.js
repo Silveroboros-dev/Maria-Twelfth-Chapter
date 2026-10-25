@@ -1,135 +1,317 @@
-/* Device-only soundtrack. No file bytes or names leave this tab. */
+/* Visible YouTube soundtrack. The player is created only after a play request. */
 (function (root) {
   "use strict";
-  const TRACKS = {
-    main: { title: "Towards the Sun", artist: "Rihanna" },
-    victory: { title: "Unstoppable", artist: "Sia" },
-    finale: { title: "Unwritten", artist: "Natasha Bedingfield" }
-  };
-  function create(audio, options = {}) {
-    const makeURL = options.makeURL || (file => URL.createObjectURL(file));
-    const revokeURL = options.revokeURL || (url => URL.revokeObjectURL(url));
-    const files = {};
-    let context = "main", active = "", intent = false, revision = 0, expectedPauses = 0;
-    let cueStart = 0, cueEnd = 12, returnTo = null, pendingSeek = null, message = "Choose the songs below, then tap Start music.";
-    const snapshot = () => ({ context, active, playing: intent && !audio.paused, intent, message,
-      files: Object.fromEntries(Object.entries(files).map(([key, file]) => [key, file.name])), cueStart });
+
+  const TRACKS = Object.freeze({
+    main: Object.freeze({ title: "Towards the Sun", artist: "Rihanna", videoId: "G3jq77_P-cA", start: 0 }),
+    victory: Object.freeze({ title: "Unstoppable", artist: "Sia", videoId: "lIaGs-bWxEk", start: 0 }),
+    finale: Object.freeze({ title: "Unwritten", artist: "Natasha Bedingfield", videoId: "b7k0a5hYnSI", start: 121 })
+  });
+  let apiPromise;
+
+  function defaultLoadApi(doc) {
+    if (root.YT?.Player) return Promise.resolve(root.YT);
+    if (apiPromise) return apiPromise;
+    apiPromise = new Promise((resolve, reject) => {
+      const previous = root.onYouTubeIframeAPIReady;
+      const script = doc.createElement("script");
+      script.src = "https://www.youtube.com/iframe_api";
+      script.async = true;
+      root.onYouTubeIframeAPIReady = function () {
+        if (typeof previous === "function") previous();
+        if (root.YT?.Player) resolve(root.YT);
+        else reject(new Error("YouTube player API did not initialize"));
+      };
+      script.onerror = () => reject(new Error("YouTube player API could not load"));
+      (doc.head || doc.body).appendChild(script);
+    }).catch(error => { apiPromise = null; throw error; });
+    return apiPromise;
+  }
+
+  function create(container, options = {}) {
+    if (!container) throw new TypeError("A persistent video container is required");
+    const doc = options.document || root.document;
+    const loadApi = options.loadApi || (() => defaultLoadApi(doc));
+    const playerFactory = options.playerFactory || ((iframe, config, YT) => new YT.Player(iframe, config));
+    const setTimer = options.setInterval || root.setInterval.bind(root);
+    const clearTimer = options.clearInterval || root.clearInterval.bind(root);
+    const origin = options.origin || root.location?.origin || "";
+    let context = "main", active = "", visible = false, playing = false, intent = false;
+    let message = "Tap Play video to open YouTube inside the quest.", cueStart = 0;
+    let iframe = null, player = null, playerReady = false, timer = null, returnTo = null;
+    let revision = 0, playerEpoch = 0, sourceStart = 0, sourceStarted = false;
+
+    const snapshot = () => ({ context, active, visible, playing, intent, message, cueStart });
     const notify = () => options.onChange?.(snapshot());
-    function pauseMedia() {
-      if (!audio.paused) expectedPauses++;
-      audio.pause();
+    const track = kind => TRACKS[kind];
+    const sourceId = () => track(active)?.videoId;
+
+    function urlFor(kind, start, autoplay) {
+      const args = new URLSearchParams({ controls: "1", playsinline: "1", rel: "0", enablejsapi: "1", autoplay: autoplay ? "1" : "0", start: String(Math.floor(start)) });
+      if (kind === "victory") args.set("end", String(Math.floor(start + 12)));
+      if (/^https?:\/\//.test(origin)) args.set("origin", origin);
+      return `https://www.youtube-nocookie.com/embed/${track(kind).videoId}?${args}`;
     }
-    function seek() {
-      if (!pendingSeek || pendingSeek.revision !== revision) return;
-      if (!Number.isFinite(audio.duration)) return;
-      const time = pendingSeek.time < audio.duration ? pendingSeek.time : 0;
-      try { audio.currentTime = time; pendingSeek = null; if (active === "victory") cueEnd = time + 12; } catch { /* retry on metadata */ }
+
+    function createIframe(kind, start, autoplay) {
+      const frame = doc.createElement("iframe");
+      frame.title = `${track(kind).title} — ${track(kind).artist} on YouTube`;
+      frame.src = urlFor(kind, start, autoplay);
+      frame.referrerPolicy = "strict-origin-when-cross-origin";
+      frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+      frame.allowFullscreen = true;
+      frame.setAttribute("loading", "eager");
+      container.replaceChildren(frame);
+      iframe = frame;
+      visible = true;
     }
-    function play() {
+
+    function stopTimer() {
+      if (timer !== null) { clearTimer(timer); timer = null; }
+    }
+
+    function currentTime() {
+      if (!playerReady || typeof player?.getCurrentTime !== "function") return sourceStart;
+      try {
+        const time = Number(player.getCurrentTime());
+        return Number.isFinite(time) && time >= 0 ? time : sourceStart;
+      } catch { return sourceStart; }
+    }
+
+    function matchesSource(target) {
+      if (!player || target !== player || !visible || !active) return false;
+      try {
+        const id = target.getVideoData?.()?.video_id;
+        return !id || id === sourceId();
+      } catch { return true; }
+    }
+
+    function startTimer() {
+      stopTimer();
+      if (active !== "victory" || !playing || !intent || !playerReady) return;
       const token = revision;
-      intent = true;
-      message = "";
-      // Keep this call synchronous with the button tap for Safari's media policy.
-      let result;
-      try { result = audio.play(); } catch (error) { result = Promise.reject(error); }
-      Promise.resolve(result).then(() => { if (token === revision) notify(); }).catch(() => {
-        if (token !== revision) return;
-        failed("Tap Start music to resume. If it still cannot play, choose a downloaded MP3 or M4A file.");
-      });
-      notify();
+      timer = setTimer(() => {
+        if (token !== revision || active !== "victory" || !playing || !intent) { stopTimer(); return; }
+        if (currentTime() >= sourceStart + 12) restoreMain();
+      }, 250);
     }
-    function switchTo(kind, time, shouldPlay) {
+
+    function destroyPlayer() {
+      stopTimer();
+      playerEpoch++;
+      const old = player;
+      player = null;
+      playerReady = false;
+      if (old) { try { old.destroy(); } catch { /* Remove the iframe below regardless. */ } }
+      container.replaceChildren();
+      iframe = null;
+    }
+
+    function close() {
       revision++;
-      pauseMedia();
-      pendingSeek = null;
-      active = files[kind] ? kind : "";
+      destroyPlayer();
+      active = "";
+      visible = false;
+      playing = false;
       intent = false;
-      if (!active) {
-        audio.removeAttribute("src"); audio.load();
-        message = `Choose ${TRACKS[kind].title} below to play this part.`;
-        notify(); return;
-      }
-      audio.src = files[kind].url;
-      audio.loop = kind === "main";
-      pendingSeek = { revision, time: Math.max(0, time || 0) };
-      audio.load(); seek();
-      message = "";
-      if (shouldPlay) play(); else notify();
-    }
-    function endCue() {
-      if (active !== "victory" || !returnTo) return;
-      const resume = returnTo;
       returnTo = null;
-      switchTo(context, context === "main" ? resume.time : 0, resume.play && intent);
-    }
-    function failed(note) {
-      if (active === "victory" && returnTo) {
-        const resume = returnTo, shouldPlay = resume.play && intent;
-        returnTo = null;
-        switchTo(context, context === "main" ? resume.time : 0, shouldPlay);
-        message = active === context ? "The Unstoppable cue could not play. Returned to the main theme; choose another victory file to try again." : "The Unstoppable cue could not play. Choose the main theme file below to continue with music.";
-      } else { intent = false; message = note; }
+      message = "Video closed. Tap Start music to open it again.";
       notify();
     }
-    audio.addEventListener("loadedmetadata", seek);
-    audio.addEventListener("playing", notify);
-    audio.addEventListener("pause", () => {
-      if (expectedPauses) { expectedPauses--; return; }
-      intent = false; notify();
-    });
-    audio.addEventListener("timeupdate", () => { if (!pendingSeek && active === "victory" && audio.currentTime >= cueEnd) endCue(); });
-    audio.addEventListener("ended", () => {
-      // Ignore an ended event queued by a source which has since been replaced.
-      if (!audio.ended) return;
-      if (active === "victory") endCue();
-      else { intent = false; notify(); }
-    });
-    audio.addEventListener("error", () => {
-      if (!audio.error) return;
-      failed("This file could not play. Choose a downloaded MP3 or M4A file. The quest can continue without music.");
-    });
-    function select(kind, file) {
-      if (!TRACKS[kind] || !file) return;
-      if (!/^audio\//.test(file.type || "") && !/\.(mp3|m4a|aac|wav|ogg|flac)$/i.test(file.name || "")) {
-        message = "Please choose an audio file, such as MP3 or M4A."; notify(); return;
-      }
-      const old = files[kind], wasPlaying = intent;
-      const extension = file.name?.split(".").pop().toLowerCase();
-      const mime = { mp3: "audio/mpeg", m4a: "audio/mp4", aac: "audio/aac", wav: "audio/wav", ogg: "audio/ogg", flac: "audio/flac" }[extension];
-      const typed = !/^audio\//.test(file.type || "") && mime ? new Blob([file], { type: mime }) : file;
-      files[kind] = { url: makeURL(typed), name: file.name };
-      if (active === kind || (!active && kind === context)) {
-        if (kind === "victory") {
-          const resume = returnTo || { time: 0, play: false };
-          returnTo = null; switchTo(context, resume.time, resume.play && wasPlaying);
+
+    function sourceSpec(kind, start) {
+      const spec = { videoId: track(kind).videoId, startSeconds: start };
+      if (kind === "victory") spec.endSeconds = start + 12;
+      return spec;
+    }
+
+    function switchSource(kind, start, shouldPlay) {
+      revision++;
+      stopTimer();
+      active = kind;
+      sourceStart = start;
+      sourceStarted = false;
+      intent = shouldPlay;
+      playing = false;
+      if (iframe) iframe.title = `${track(kind).title} — ${track(kind).artist} on YouTube`;
+      message = shouldPlay
+        ? "Video opened. If it does not start, tap Play in the video."
+        : "Video ready. Tap Play in the video.";
+      if (player && playerReady) {
+        try {
+          const command = shouldPlay ? "loadVideoById" : "cueVideoById";
+          player[command](sourceSpec(kind, start));
+        } catch {
+          message = "YouTube controls are unavailable. Use Play in the visible video.";
+          destroyPlayer();
+          createIframe(kind, start, shouldPlay);
+          ensureSdk();
         }
-        else switchTo(kind, 0, wasPlaying);
+      } else if (player) {
+        // An SDK player still initializing may be bound to the previous source.
+        destroyPlayer();
+        createIframe(kind, start, shouldPlay);
+        ensureSdk();
+      } else {
+        if (iframe) iframe.src = urlFor(kind, start, shouldPlay);
+        else createIframe(kind, start, shouldPlay);
+        ensureSdk();
       }
-      if (old) revokeURL(old.url);
-      message = "File ready on this device. Keep this tab open; reloading means selecting the files again.";
       notify();
     }
-    function start() {
-      if (active) play(); else switchTo(context, 0, true);
+
+    function restoreMain() {
+      if (context !== "main" || active !== "victory" || !returnTo) return;
+      const saved = returnTo;
+      returnTo = null;
+      switchSource("main", saved.time, saved.intent && intent);
     }
-    function pause() { revision++; if (pendingSeek) pendingSeek.revision = revision; intent = false; pauseMedia(); message = "Music paused."; notify(); }
+
+    function ensureSdk() {
+      if (player || !visible) return;
+      const token = revision, frame = iframe, epoch = playerEpoch;
+      Promise.resolve().then(loadApi).then(YT => {
+        if (token !== revision || epoch !== playerEpoch || frame !== iframe || !visible || !intent || player) return;
+        const handlerEpoch = playerEpoch;
+        const events = {
+          onReady(event) {
+            if (handlerEpoch !== playerEpoch || !matchesSource(event.target)) return;
+            playerReady = true;
+            if (intent) {
+              try { player.playVideo(); } catch { message = "Tap Play in the visible video."; notify(); }
+            }
+          },
+          onStateChange(event) {
+            if (handlerEpoch !== playerEpoch || !matchesSource(event.target)) return;
+            const state = event.data;
+            if (state === 1) {
+              sourceStarted = true;
+              playing = true;
+              intent = true;
+              message = "";
+              startTimer();
+            } else if (state === 2) {
+              playing = false;
+              intent = false;
+              stopTimer();
+              message = "Video paused. Tap Play in the video to resume.";
+            } else if (state === 0) {
+              if(active === "victory" && !sourceStarted)return;
+              playing = false;
+              stopTimer();
+              if (active === "victory" && intent) { restoreMain(); return; }
+              intent = false;
+              message = "Video ended. Use the music controls to replay.";
+            } else if (state === 3 || state === 5) {
+              playing = false;
+              stopTimer();
+            }
+            notify();
+          },
+          onAutoplayBlocked(event) {
+            if (handlerEpoch !== playerEpoch || !matchesSource(event.target)) return;
+            playing = false;
+            intent = false;
+            stopTimer();
+            message = "Autoplay was blocked. Tap Play in the visible YouTube video.";
+            notify();
+          },
+          onError(event) {
+            if (handlerEpoch !== playerEpoch || !matchesSource(event.target)) return;
+            options.onError?.({code:event.data,videoId:sourceId()});
+            if(active === "victory" && returnTo){
+              restoreMain();
+              message = "The Unstoppable clip could not play. Returned to Towards the Sun.";
+              notify();return;
+            }
+            playing = false;
+            intent = false;
+            stopTimer();
+            message = event.data===101||event.data===150 ? "YouTube does not allow this video to play here. Use Open on YouTube below." : event.data===153 ? "Open the public quest link in Safari to play this video, or use Open on YouTube below." : "YouTube could not play this video here. Use Open on YouTube below.";
+            notify();
+          }
+        };
+        try { player = playerFactory(frame, { events }, YT); }
+        catch { message = "YouTube controls are unavailable. Use Play in the visible video."; notify(); }
+      }).catch(() => {
+        if (token !== revision || frame !== iframe || !visible) return;
+        message = "YouTube controls could not load. Use Play in the visible video; choose the main video again after a celebration clip.";
+        notify();
+      });
+    }
+
+    function start(restart = false) {
+      if (restart || active !== context || !visible) {
+        if (typeof options.onOpen === "function") options.onOpen();
+        returnTo = null;
+        switchSource(context, track(context).start, true);
+      } else {
+        if (typeof options.onOpen === "function") options.onOpen();
+        intent = true;
+        message = "Video opened. If it does not start, tap Play in the video.";
+        if (player && playerReady) {
+          try { player.playVideo(); } catch { message = "Tap Play in the visible video."; }
+        } else {
+          iframe.src = urlFor(active, sourceStart, true);
+          ensureSdk();
+        }
+        notify();
+      }
+      return true;
+    }
+
+    function pause() {
+      if(!visible)return;
+      revision++;
+      stopTimer();
+      intent = false;
+      playing = false;
+      message = "Video paused.";
+      if (player && playerReady) {
+        try { player.pauseVideo(); }
+        catch { destroyPlayer(); createIframe(active, sourceStart, false); }
+      } else if (player) {
+        destroyPlayer();
+        createIframe(active, sourceStart, false);
+      } else if (iframe && active) {
+        // Reloading without autoplay is the only reliable stop when the API is blocked.
+        iframe.src = urlFor(active, sourceStart, false);
+      }
+      notify();
+    }
+
     function setContext(finale) {
       const next = finale ? "finale" : "main";
       if (next === context) return;
-      context = next; returnTo = null;
-      switchTo(context, 0, intent);
+      close();
+      context = next;
+      message = next === "finale" ? "Finale ready. Play the celebration video from 2:01." : "Tap Play video to open YouTube inside the quest.";
+      notify();
     }
+
     function victory(preview = false) {
-      if (context === "finale" || !files.victory || active === "victory" || (!preview && !intent)) return false;
-      returnTo = { time: active === "main" ? audio.currentTime : 0, play: intent };
-      cueEnd = cueStart + 12;
-      switchTo("victory", cueStart, true);
+      if (context === "finale" || active === "victory" || (!preview && !(active === "main" && intent))) return false;
+      if (typeof options.onOpen === "function") options.onOpen();
+      returnTo = { time: active === "main" ? currentTime() : track("main").start, intent: active === "main" && intent };
+      switchSource("victory", cueStart, true);
       return true;
     }
-    function setCueStart(value) { cueStart = Math.max(0, Math.min(3600, Number(value) || 0)); notify(); }
-    function reset() { context = "main"; returnTo = null; switchTo("main", 0, false); }
-    return { select, start, pause, setContext, victory, setCueStart, reset, snapshot };
+
+    function setCueStart(value) {
+      cueStart = Math.max(0, Math.min(3600, Number(value) || 0));
+      notify();
+    }
+
+    function reset() {
+      close();
+      context = "main";
+      message = "Tap Play video to open YouTube inside the quest.";
+      notify();
+    }
+
+    return { start, pause, close, setContext, victory, setCueStart, reset, snapshot };
   }
+
   const api = { TRACKS, create };
   root.QuestMusic = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

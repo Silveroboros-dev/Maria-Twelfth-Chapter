@@ -51,7 +51,7 @@
     return `<section class="reading success"><span class="eyebrow">${gate?"THE DAWN GATE IS OPEN":"CHAPTER "+e(s.number)+" / UNLOCKED"}</span><h1>${gate?"You brought<br><em>the light back.</em>":"Another page<br><em>turns towards dawn.</em>"}</h1>${state.firstTry.includes(s.id)?'<p class="first-key">✦ FIRST KEY. PERFECT FIT. UNSTOPPABLE.</p>':""}${seal?`<div class="earned-seal"><span>✦</span><div><strong>${e(seal.symbol)} SEAL</strong><small>LETTER ${e(seal.letter)} / DIGIT ${e(seal.digit)}</small></div></div>`:""}<p class="lead">${e(gate?"The five digits hold. Now read the letters on your seals, from left to right. The Keeper is waiting on the other side.":s.success_text)}</p>${rehearsal&&!gate?'<p class="rehearsal-note">In the party game, follow that hiding-place clue. For this rehearsal, the next envelope is ready on screen.</p>':""}<div class="reading-bottom">${button(gate?"Turn the twelfth page <span>→</span>":rehearsal?(next.id==="gate"?"Open the Dawn Gate card <span>→</span>":`Open envelope ${e(next.number)} <span>→</span>`):"We’re ready for the next chapter <span>→</span>","advance")}</div></section>`;
   }
   function finale(){
-    return `<section class="reading finale"><span class="eyebrow">HAPPY TWELFTH BIRTHDAY, MARIA</span><div class="sunburst" aria-hidden="true">✺</div><h1>Chapter Twelve<br><em>is yours.</em></h1><div class="shine" aria-label="The seals spell SHINE">S H I N E</div><div class="story-text">${paragraphs(q.finale.text)}</div><div class="finale-song"><span class="eyebrow">YOUR NEXT CHAPTER HAS A SOUNDTRACK</span><h2>Unwritten</h2><p>Natasha Bedingfield</p>${button("Play finale music <span>♫</span>","finale-music")}<p class="small-note" id="finale-music-status"></p></div></section>`;
+    return `<section class="reading finale"><span class="eyebrow">HAPPY TWELFTH BIRTHDAY, MARIA</span><div class="sunburst" aria-hidden="true">✺</div><h1>Chapter Twelve<br><em>is yours.</em></h1><div class="shine" aria-label="The seals spell SHINE">S H I N E</div><div class="finale-song"><span class="eyebrow">LET YOUR CELEBRATION BEGIN / FROM 2:01</span><h2>Unwritten</h2><p>Natasha Bedingfield</p>${button("Play celebration video · 2:01 <span>▶</span>","finale-music")}<p class="small-note" id="finale-music-status"></p></div><div class="story-text">${paragraphs(q.finale.text)}</div></section>`;
   }
   function render(focus=true){
     state=C.hydrate(state,q);
@@ -69,7 +69,7 @@
     state.input=document.getElementById("answer").value;
     const result=C.submit(state,q,state.input);
     state=result.state;save();
-    if(result.correct){if(result.firstTry)music.victory();error="";render();}
+    if(result.correct){effects.play(C.current(state,q).id==="gate"?"gate":"door");if(result.firstTry)music.victory();error="";render();}
     else{error=result.empty?"Enter your team's answer first.":"That key hasn’t turned yet. Compare your clues and try again.";render(false);document.getElementById("answer").focus();}
   });
   app.addEventListener("click",event=>{
@@ -86,8 +86,8 @@
       const focusId=control.id;save();render(false);document.getElementById(focusId)?.focus({preventScroll:true});return;
     }
     const action=event.target.closest("[data-action]")?.dataset.action;
-    if(action==="advance"){state=C.advance(state,q);error="";save();render();}
-    if(action==="finale-music"){music.start();if(!music.snapshot().files.finale)toggleMusic(true);}
+    if(action==="advance"){state=C.advance(state,q);if(state.phase==="finale")effects.stop();error="";save();render();if(state.phase==="finale")music.start(true);}
+    if(action==="finale-music"&&state.phase==="finale"&&C.finished(state,q)){music.start(true);}
     if(action==="hint"){
       const id=state.phase==="search"?"search":C.current(state,q).id;
       state.hints[id]=Math.min(3,(state.hints[id]||0)+1);save();render(false);
@@ -106,10 +106,10 @@
     if(!dialog.open){if(typeof dialog.showModal==="function")dialog.showModal();else dialog.setAttribute("open","");}
     if(!keeperUnlocked)document.getElementById("keeper-pin")?.focus({preventScroll:true});
   }
-  document.getElementById("keeper-toggle").addEventListener("click",()=>{lockKeeper();showKeeper();});
+  document.getElementById("keeper-toggle").addEventListener("click",()=>{music.close();effects.stop();lockKeeper();showKeeper();});
   dialog.addEventListener("cancel",lockKeeper);
   dialog.addEventListener("close",()=>{if(!dialog.open){lockKeeper();document.getElementById("keeper-toggle").focus({preventScroll:true});}});
-  document.addEventListener("visibilitychange",()=>{if(document.hidden&&dialog.open)closeKeeper();});
+  document.addEventListener("visibilitychange",()=>{if(document.hidden){music.pause();effects.stop();if(dialog.open)closeKeeper();}});
   kc.addEventListener("submit",async event=>{
     if(event.target.id!=="keeper-pin-form")return;
     event.preventDefault();
@@ -132,29 +132,33 @@
     if(!keeperUnlocked||!dialog.open)return;
     if(a==="desk")showKeeper();
     if(a==="reset-confirm")kc.innerHTML=`<button class="dialog-close quiet" data-keeper="close" aria-label="Close host controls">Close ×</button><h2 id="keeper-title">Start a fresh ${rehearsal?"rehearsal":"adventure"}?</h2><p>${rehearsal?"This clears only the rehearsal. Party progress is unchanged.":"This clears the answers and seals saved on this device."}</p><div class="dialog-actions"><button class="secondary" data-keeper="desk">Keep our progress</button><button class="primary" data-keeper="reset">Reset the quest</button></div>`;
-    if(a==="reset"){state=C.fresh();if(rehearsal)props=R.fresh();music.reset();error="";save();closeKeeper();render();}
+    if(a==="reset"){state=C.fresh();if(rehearsal)props=R.fresh();effects.stop();music.reset();error="";save();closeKeeper();render();}
     if(a==="rescue-confirm")kc.innerHTML=`<button class="dialog-close quiet" data-keeper="close" aria-label="Close host controls">Close ×</button><h2 id="keeper-title">Help this chapter along?</h2><p>This completes only the current chapter. The team will still solve every later puzzle.</p><div class="dialog-actions"><button class="secondary" data-keeper="desk">Back to hints</button><button class="primary" data-keeper="rescue">Award this chapter</button></div>`;
-    if(a==="rescue"){const next=C.complete(state,q,"",true);if(next){state=next;error="";save();closeKeeper();render();}}
+    if(a==="rescue"){const next=C.complete(state,q,"",true);if(next){state=next;effects.play(C.current(state,q).id==="gate"?"gate":"door");error="";save();closeKeeper();render();}}
   });
-  const panel=document.getElementById("soundtrack"), mt=document.getElementById("music-toggle");
+  const panel=document.getElementById("soundtrack"), mt=document.getElementById("music-toggle"), videoDock=document.getElementById("video-dock");
   let musicScroll=0;
   function drawMusic(s){
     const kind=s.active||s.context, track=window.QuestMusic.TRACKS[kind];
     document.getElementById("music-title").textContent=track.title;
     document.getElementById("music-artist").textContent=track.artist;
-    document.getElementById("music-status").textContent=s.message||(s.playing?`${track.title} is playing on this device.`:"Tap Start music when you're ready.");
-    document.getElementById("start-music").textContent=s.playing?"Playing ♫":"Start music";
+    videoDock.hidden=!s.visible;
+    document.getElementById("music-status").textContent=s.message||(s.playing?`${track.title} is playing.`:"Play a YouTube video inside the quest. No music files are needed.");
+    document.getElementById("start-music").textContent=s.playing?"Video playing":s.context==="finale"?"Play celebration video · 2:01":"Play Towards the Sun video";
     document.getElementById("start-music").disabled=s.playing;
     document.getElementById("pause-music").disabled=!s.intent;
-    document.getElementById("preview-victory").disabled=!s.files.victory||s.context==="finale";
-    for(const key of ["main","victory","finale"])document.getElementById("file-"+key).textContent=s.files[key]||"No file chosen";
+    document.getElementById("preview-victory").disabled=s.context==="finale";
+    document.getElementById("video-kicker").textContent=kind==="finale"?"MARIA'S CELEBRATION / FROM 2:01":"THE PARTY VIDEO";
+    document.getElementById("video-title").textContent=`${track.title} / ${track.artist}`;
+    document.getElementById("video-status").textContent=s.message||(s.playing?"Your video is playing.":"Tap ▶ in the video if playback waits.");
     const credit=document.getElementById("music-credit-link");
-    credit.href=kind==="victory"?"https://music.apple.com/ch/album/unstoppable/1055074478?i=1055074639":"https://www.youtube.com/watch?v="+(kind==="finale"?"b7k0a5hYnSI":"G3jq77_P-cA");
+    credit.href="https://www.youtube.com/watch?v="+track.videoId+(kind==="finale"?"&t=121s":"");
     credit.textContent=`${track.title} / ${track.artist} ↗`;
+    document.getElementById("video-link").href=credit.href;
     const finaleStatus=document.getElementById("finale-music-status");
-    if(finaleStatus)finaleStatus.textContent=s.playing&&s.active==="finale"?"Your final chapter is playing.":"Tap Play finale music to start or resume. Your host can choose the file in Music.";
+    if(finaleStatus)finaleStatus.textContent=s.playing&&s.active==="finale"?"Your celebration video is playing.":s.visible&&s.active==="finale"?(s.message||"Tap Play in the YouTube player above."):"Your celebration video starts at 2:01. Tap the button to open it.";
   }
-  const music=window.QuestMusic.create(document.getElementById("party-audio"),{onChange:drawMusic});
+  const music=window.QuestMusic.create(document.getElementById("music-player"),{onChange:drawMusic,onError:detail=>console.warn("YouTube player unavailable",detail.code,detail.videoId),onOpen:()=>{panel.hidden=true;mt.setAttribute("aria-expanded","false");videoDock.hidden=false;videoDock.scrollIntoView({behavior:"auto",block:"start"});}});
   function updateMusic(){music.setContext(state.phase==="finale"&&C.finished(state,q));drawMusic(music.snapshot());}
   function toggleMusic(open){
     if(open)musicScroll=window.scrollY;
@@ -164,11 +168,31 @@
   }
   mt.addEventListener("click",()=>toggleMusic(panel.hidden));
   document.getElementById("music-close").addEventListener("click",()=>toggleMusic(false));
-  document.getElementById("start-music").addEventListener("click",()=>music.start());
+  document.getElementById("start-music").addEventListener("click",()=>music.start(music.snapshot().context==="finale"));
   document.getElementById("pause-music").addEventListener("click",()=>music.pause());
-  document.querySelectorAll("[data-song]").forEach(input=>input.addEventListener("change",()=>music.select(input.dataset.song,input.files?.[0])));
+  document.getElementById("close-video").addEventListener("click",()=>music.close());
   document.getElementById("cue-start").addEventListener("change",event=>music.setCueStart(event.target.value));
   document.getElementById("preview-victory").addEventListener("click",()=>music.victory(true));
+  const effectsPreference="maria-twelfth-chapter-effects-v1", effectsToggle=document.getElementById("effects-toggle");
+  let effectsEnabled=true;
+  try{effectsEnabled=localStorage.getItem(effectsPreference)!=="off";}catch{/* Effects remain usable without browser storage. */}
+  function drawEffects(s){
+    effectsToggle.textContent=s.enabled?"Effects on":"Effects off";
+    effectsToggle.setAttribute("aria-pressed",String(s.enabled));
+    effectsToggle.setAttribute("aria-label",s.enabled?"Sound effects on":"Sound effects off");
+    document.getElementById("preview-door").disabled=!s.enabled;
+    document.getElementById("preview-gate").disabled=!s.enabled;
+    document.getElementById("effects-status").textContent=s.message||(s.enabled?"Tap a preview to hear the castle.":"Turn Effects on above to hear the castle.");
+  }
+  const effects=window.QuestEffects.create(document.getElementById("quest-effects"),{enabled:effectsEnabled,onChange:drawEffects});
+  effectsToggle.addEventListener("click",()=>{
+    effects.setEnabled(!effects.snapshot().enabled);
+    try{localStorage.setItem(effectsPreference,effects.snapshot().enabled?"on":"off");}catch{}
+  });
+  document.getElementById("preview-door").addEventListener("click",()=>effects.play("door"));
+  document.getElementById("preview-gate").addEventListener("click",()=>effects.play("gate"));
+  drawEffects(effects.snapshot());
+  if("IntersectionObserver" in window)new IntersectionObserver(entries=>{if(entries.at(-1).intersectionRatio<0.5&&music.snapshot().visible&&music.snapshot().intent)music.pause();},{threshold:[0,0.5,1]}).observe(document.getElementById("music-player"));
   render(false);
   if("serviceWorker" in navigator && location.protocol!=="file:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 })();
