@@ -1,7 +1,7 @@
 /* Original castle effects ship with the game; playback never controls quest progress. */
 (function (root) {
   "use strict";
-  const SOUNDS = { door: "assets/castle-door.mp3?v=6", gate: "assets/dawn-gate.mp3?v=6" };
+  const SOUNDS = { door: "assets/castle-door.mp3?v=7", gate: "assets/dawn-gate.mp3?v=7", failure: "assets/locked-door.mp3?v=7" };
   function create(audio, options = {}) {
     let enabled = options.enabled !== false, revision = 0, active = "", message = "";
     const snapshot = () => ({ enabled, active, playing: !!active && !audio.paused, message });
@@ -25,7 +25,7 @@
       stop();
       const token = revision;
       active = kind;
-      message = kind === "gate" ? "The Dawn Gate is opening." : "The iron door is opening.";
+      message = kind === "failure" ? "The lock holds. Try another key." : kind === "gate" ? "The Dawn Gate is opening." : "The iron door is opening.";
       if (audio.getAttribute("src") !== SOUNDS[kind]) {
         audio.src = SOUNDS[kind]; audio.load();
       }

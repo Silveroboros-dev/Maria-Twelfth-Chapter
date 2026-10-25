@@ -1,5 +1,5 @@
-const CACHE="maria-chapter-twelve-v6";
-const ASSETS=["./","index.html","styles.css?v=6","app.js?v=6","core.js?v=6","quest.js?v=6","rehearsal.js?v=6","music.js?v=6","effects.js?v=6","keeper.js?v=6","assets/archive.svg","assets/castle-door.mp3?v=6","assets/dawn-gate.mp3?v=6"];
+const CACHE="maria-chapter-twelve-v7";
+const ASSETS=["./","index.html","styles.css?v=7","app.js?v=7","core.js?v=7","quest.js?v=7","rehearsal.js?v=7","music.js?v=7","effects.js?v=7","keeper.js?v=7","assets/archive.svg","assets/castle-door.mp3?v=7","assets/dawn-gate.mp3?v=7","assets/locked-door.mp3?v=7"];
 async function audioRange(response, range) {
   if (!range || response.status !== 200) return response;
   const match=/^bytes=(\d*)-(\d*)$/.exec(range);
@@ -25,7 +25,7 @@ self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys
 self.addEventListener("fetch",event=>{
   const url=new URL(event.request.url);
   if(event.request.method!=="GET"||!/^https?:$/.test(url.protocol)||url.origin!==self.location.origin)return;
-  if(/\/assets\/(castle-door|dawn-gate)\.mp3$/.test(url.pathname)){event.respondWith(castleAudio(event.request));return;}
+  if(/\/assets\/(castle-door|dawn-gate|locked-door)\.mp3$/.test(url.pathname)){event.respondWith(castleAudio(event.request));return;}
   event.respondWith(fetch(event.request).then(response=>{
     if(response.status===200){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy)).catch(()=>{});}
     return response;

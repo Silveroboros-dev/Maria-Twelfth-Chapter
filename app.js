@@ -70,7 +70,7 @@
     const result=C.submit(state,q,state.input);
     state=result.state;save();
     if(result.correct){effects.play(C.current(state,q).id==="gate"?"gate":"door");if(result.firstTry)music.victory();error="";render();}
-    else{error=result.empty?"Enter your team's answer first.":"That key hasn’t turned yet. Compare your clues and try again.";render(false);document.getElementById("answer").focus();}
+    else{if(!result.empty)effects.play("failure");error=result.empty?"Enter your team's answer first.":"That key hasn’t turned yet. Compare your clues and try again.";render(false);document.getElementById("answer").focus();}
   });
   app.addEventListener("click",event=>{
     const control=event.target.closest("[data-rehearsal]");
@@ -78,7 +78,7 @@
       const action=control.dataset.rehearsal;
       if(action==="letter"&&state.phase==="search"){
         if(control.dataset.index==="7"){state=C.advance(state,q);error="";save();render();return;}
-        error="No envelope behind that letter. Read the clue and try another.";
+        effects.play("failure");error="No envelope behind that letter. Read the clue and try another.";
       }
       if(action==="mirror"&&C.current(state,q)?.id==="mirror")props={...props,mirror:!props.mirror};
       if(action==="spark"&&C.current(state,q)?.id==="embers")props=R.adjustSpark(props,control.dataset.beacon,Number(control.dataset.delta));
@@ -182,6 +182,7 @@
     effectsToggle.setAttribute("aria-label",s.enabled?"Sound effects on":"Sound effects off");
     document.getElementById("preview-door").disabled=!s.enabled;
     document.getElementById("preview-gate").disabled=!s.enabled;
+    document.getElementById("preview-failure").disabled=!s.enabled;
     document.getElementById("effects-status").textContent=s.message||(s.enabled?"Tap a preview to hear the castle.":"Turn Effects on above to hear the castle.");
   }
   const effects=window.QuestEffects.create(document.getElementById("quest-effects"),{enabled:effectsEnabled,onChange:drawEffects});
@@ -191,6 +192,7 @@
   });
   document.getElementById("preview-door").addEventListener("click",()=>effects.play("door"));
   document.getElementById("preview-gate").addEventListener("click",()=>effects.play("gate"));
+  document.getElementById("preview-failure").addEventListener("click",()=>effects.play("failure"));
   drawEffects(effects.snapshot());
   if("IntersectionObserver" in window)new IntersectionObserver(entries=>{if(entries.at(-1).intersectionRatio<0.5&&music.snapshot().visible&&music.snapshot().intent)music.pause();},{threshold:[0,0.5,1]}).observe(document.getElementById("music-player"));
   render(false);
