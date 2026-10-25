@@ -1,4 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 650" fill="none">
+<style>
+  .archive-pumpkin-halo { animation: archive-halo-breathe 6.7s ease-in-out infinite; }
+  .archive-pumpkin-soft-light { animation: archive-soft-flicker 5.9s ease-in-out infinite; }
+  .archive-pumpkin-carved-light { animation: archive-face-flicker 6.3s ease-in-out infinite; }
+  @keyframes archive-halo-breathe {
+    0%, 100% { opacity: .84; } 18% { opacity: .96; } 37% { opacity: .78; }
+    54% { opacity: 1; } 71% { opacity: .82; } 87% { opacity: .94; }
+  }
+  @keyframes archive-soft-flicker {
+    0%, 100% { opacity: .88; } 14% { opacity: 1; } 31% { opacity: .74; }
+    43% { opacity: .93; } 62% { opacity: .81; } 79% { opacity: .97; }
+  }
+  @keyframes archive-face-flicker {
+    0%, 100% { opacity: .94; } 16% { opacity: 1; } 29% { opacity: .79; }
+    41% { opacity: .95; } 58% { opacity: .85; } 76% { opacity: 1; }
+    89% { opacity: .9; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .archive-pumpkin-halo, .archive-pumpkin-soft-light, .archive-pumpkin-carved-light { animation: none; opacity: 1; }
+  }
+</style>
 <defs><radialGradient id="glow"><stop stop-color="#b34021" stop-opacity=".42"/><stop offset="1" stop-color="#211717" stop-opacity="0"/></radialGradient><radialGradient id="pumpkin-halo"><stop stop-color="#efac71" stop-opacity=".4"/><stop offset=".5" stop-color="#efac71" stop-opacity=".15"/><stop offset="1" stop-color="#efac71" stop-opacity="0"/></radialGradient><linearGradient id="door" x2="0" y2="1"><stop stop-color="#451f26"/><stop offset="1" stop-color="#171416"/></linearGradient><linearGradient id="light"><stop stop-color="#ffe9a5"/><stop offset="1" stop-color="#efac71"/></linearGradient><filter id="face-blur" x="-30%" y="-50%" width="160%" height="200%"><feGaussianBlur stdDeviation="6"/></filter></defs>
 <circle cx="280" cy="360" r="260" fill="url(#glow)"/>
 <path d="M110 555V255a170 170 0 0 1 340 0v300Z" fill="#21191b" stroke="#6b3c37" stroke-width="2"/>
@@ -19,7 +40,7 @@
 <path d="M280 468v85m-72-64 48 5m-48 10 48 5m-48 10 48 5m96-35-48 5m48 10-48 5m48 10-48 5" stroke="#84684f" stroke-width="2"/>
 <path d="m280 422 5 14 15 5-15 5-5 14-5-14-15-5 15-5Z" fill="#ffd48a"/>
 <path d="M266 397q14-26 28 0m-7 0q5-17 12-23" stroke="#c1916d"/>
-<g transform="translate(87 492)"><ellipse cx="32" cy="75" rx="78" ry="68" fill="url(#pumpkin-halo)"/><path d="M25 25q-2-20 9-26" stroke="#827253" stroke-width="7"/><ellipse cx="32" cy="70" rx="56" ry="48" fill="#b34d2b"/><ellipse cx="32" cy="70" rx="34" ry="48" stroke="#de7840" stroke-width="2"/><g fill="#efac71" filter="url(#face-blur)"><path d="m-5 64 19-17 11 22Zm43 5 11-22 19 17ZM6 86l13 4 12-2 13 2 13-4-7 17-16-4-16 4Z"/></g><path d="m-5 64 19-17 11 22Zm43 5 11-22 19 17ZM6 86l13 4 12-2 13 2 13-4-7 17-16-4-16 4Z" fill="url(#light)" stroke="#7a3521" stroke-width="1.4" stroke-linejoin="round"/></g>
+<g transform="translate(87 492)"><ellipse class="archive-pumpkin-halo" cx="32" cy="75" rx="78" ry="68" fill="url(#pumpkin-halo)"/><path d="M25 25q-2-20 9-26" stroke="#827253" stroke-width="7"/><ellipse cx="32" cy="70" rx="56" ry="48" fill="#b34d2b"/><ellipse cx="32" cy="70" rx="34" ry="48" stroke="#de7840" stroke-width="2"/><g class="archive-pumpkin-soft-light" fill="#efac71" filter="url(#face-blur)"><path d="m-5 64 19-17 11 22Zm43 5 11-22 19 17ZM6 86l13 4 12-2 13 2 13-4-7 17-16-4-16 4Z"/></g><path class="archive-pumpkin-carved-light" d="m-5 64 19-17 11 22Zm43 5 11-22 19 17ZM6 86l13 4 12-2 13 2 13-4-7 17-16-4-16 4Z" fill="url(#light)" stroke="#7a3521" stroke-width="1.4" stroke-linejoin="round"/></g>
 <g transform="translate(406 465)"><path d="M0 100h18V43H0Z" fill="#d9c1a1"/><path d="M9 39c-24-15 9-42 9-42s21 35-9 42Z" fill="#eca65b"/><path d="M-7 101h32v7H-7Z" fill="#705951"/></g>
 <path d="M88 582h384m-350 10h314m-285 10h254" stroke="#745043"/>
 <path d="M145 118h-44m-6 0h-7m333 0h44m6 0h7M70 370h-24m448 0h24" stroke="#6d4137"/>

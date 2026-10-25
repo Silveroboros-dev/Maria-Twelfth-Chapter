@@ -8,9 +8,4 @@
              M230 0q0 39-11 71-1 38-33 64-13 34-51 51-26 32-64 33-32 11-71 11" stroke-width="1.05" opacity=".76"/>
     <path d="M23 0q-3 11-3 20M68 0q-6 20-3 22M114 0q-9 31-6 36M161 0q-10 44-8 50M207 0q-13 55-10 65" stroke-width=".6" opacity=".45"/>
   </g>
-  <path d="M191 139v19" stroke="#a99e95" stroke-width=".8" opacity=".8"/>
-  <g transform="translate(191 166)" stroke="#b9afa7" stroke-width=".85" stroke-linecap="round" opacity=".84">
-    <circle cy="-4" r="2.4" fill="#373032"/><ellipse cy="3" rx="4.2" ry="5.5" fill="#373032"/>
-    <path d="M-3-2l-8-4m8 7-9 1m9 2-8 6m14-12 8-4m-8 7 9 1m-9 2 8 6"/>
-  </g>
 </svg>
