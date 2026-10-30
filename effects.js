@@ -1,7 +1,7 @@
 /* Original castle effects ship with the game; playback never controls quest progress. */
 (function (root) {
   "use strict";
-  const SOUNDS = { door: "assets/castle-door.mp3?v=11", gate: "assets/dawn-gate.mp3?v=11", failure: "assets/locked-door.mp3?v=11" };
+  const SOUNDS = { door: "assets/castle-door.mp3?v=12", gate: "assets/dawn-gate.mp3?v=12", failure: "assets/locked-door.mp3?v=12" };
   function create(audio, options = {}) {
     let enabled = options.enabled !== false, revision = 0, active = "", message = "";
     const snapshot = () => ({ enabled, active, playing: !!active && !audio.paused, message });

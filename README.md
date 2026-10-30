@@ -12,4 +12,5 @@ Original SVG cobwebs, a slowly descending spider and candle-flicker pumpkins fra
 Music uses one visible YouTube player, with a 12-second Unstoppable chorus cue from 0:46 for correct answers under one minute or every third consecutive correct answer, and Natasha Bedingfield's Unwritten finale from 2:01.
 Opening the final chapter attempts the celebration video; tap Play if the browser blocks autoplay. Internet required; YouTube may show ads.
 No music-file import is needed. Player controls remain visible, and closing the player stops it.
-No commercial recordings, invitation photos, private address, analytics, accounts or server database are included.
+The cover uses the parent's supplied stylized Halloween group illustration. Room/bookshelf and invitation photos stay private.
+No commercial recordings, private address, analytics, accounts or server database are included.

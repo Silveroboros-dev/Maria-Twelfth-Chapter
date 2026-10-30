@@ -11,9 +11,9 @@ window.MARIA_QUEST = {
       "I am the Keeper of Unwritten Things. I have sealed your twelfth chapter behind the Dawn Gate. Follow the clues, recover all five sun seals, and bring them to the gate. Each will matter. Your friends have been invited because this chapter needs more than one voice.",
       "Somewhere ahead, the Archive is holding a birthday surprise. Your first clue is waiting in a place you already know."
     ],
-    "first_search": "Find the word standing beside the pumpkin on Maria's bookshelf. It is not printed on a book spine. Two different letters in that word appear twice. Look behind the repeated letter nearest the pumpkin. Take envelope I.",
+    "first_search": "On Maria's bookshelf, find a word made from separate white letters, not printed on a book spine. Two different letters in that word each appear twice. Among those repeated letters, choose the one furthest to the right. Look behind it for envelope I.",
     "first_search_hints": [
-      "Look for a word made from separate white letters beside the pumpkin.",
+      "Look for a word made from separate white letters on a bookshelf.",
       "The word is THRILLER. Both L and R appear twice.",
       "Look behind the R at the right-hand end of THRILLER."
     ]
@@ -265,8 +265,8 @@ window.MARIA_QUEST = {
         "The first two moves take you from LIBRARY to MOON, then to SUN.",
         "Two squares west from SUN reaches TOWER. One square south from TOWER reaches FOX."
       ],
-      "success_text": "The path glows beneath your fingers. Keep the BRIDGE seal. Its final word belongs in Maria's room as well as on the map. Find the brown-and-white plush fox on the bookshelf. Envelope V is tucked just behind it.",
-      "fallback_success_text": "The path glows beneath your fingers. Keep the BRIDGE seal. Find the soft toy marked FOX. Envelope V is just behind it."
+      "success_text": "The path glows beneath your fingers. Keep the BRIDGE seal. Follow the final word from the map: find the soft toy marked FOX on the bookshelf. Envelope V is tucked just behind it.",
+      "fallback_success_text": "The path glows beneath your fingers. Keep the BRIDGE seal. Follow the final word from the map: find the soft toy marked FOX on the bookshelf. Envelope V is tucked just behind it."
     },
     {
       "id": "embers",
